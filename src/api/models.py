@@ -65,6 +65,13 @@ class Person(db.Model):
         self.is_active = False
         db.session.commit()
 
+    def reactive_account(self, first_name, last_name, password):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.password = password
+        self.is_active = True
+        db.session.commit()
+
 
 class Ad_category(str, enum.Enum):
     option_1 = "To Sell"
@@ -84,7 +91,7 @@ class Ad(db.Model):
     text = db.Column(db.VARCHAR, unique=False, nullable=False)
     #pictures = db.Column(db.ARRAY(db.VARCHAR), unique=True, nullable=True)
     category = db.Column(db.Enum(Ad_category), nullable=False)
-    price = db.Column(db.Integer, unique=False, nullable=True)
+    price = db.Column(db.Float, unique=False, nullable=True)
     is_active = db.Column(db.Boolean, default=True, unique=False, nullable=False)
     owner = db.Column(db.Integer, db.ForeignKey("person.id"), nullable=False)
 

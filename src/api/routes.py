@@ -13,7 +13,6 @@ api = Blueprint('api', __name__)
 
 @api.route('/login', methods=['POST'])
 def login():
-    print(request.json)
     email = request.json.get('email', None)
     password = request.json.get('password', None)
 
@@ -22,7 +21,7 @@ def login():
 
     user = Person.get_by_email(email)
 
-    if user and check_password_hash(user.password, password):
+    if user and check_password_hash(user.password, password) and user.is_active:
         token = create_access_token(identity=user.id, expires_delta=timedelta(minutes=100))
         return {'token': token}, 200
 
@@ -39,6 +38,11 @@ def create_user():
 
     if not (email and first_name and last_name and password):
         return {'error': 'Missing info'}, 400
+
+    user = Person.get_by_email(email)
+    if user and not user.is_active:
+        user.reactive_account(first_name, last_name, password)
+        return jsonify(user.to_dict()), 200
      
     new_user = Person(
                 email=email, 
@@ -57,14 +61,17 @@ def create_user():
 @api.route('/users/<int:id>', methods=['GET'])
 @jwt_required()
 def read_user(id):
-    current_user = get_jwt_identity()
-    return jsonify(logged_in_as=current_user), 200
+    user = Person.get_by_id(id)
+    if user and user.is_active:
+        return jsonify(user.to_dict()), 200
+    
+    return {'error': 'User not found'}, 404
 
 
 @api.route('/users/<int:id>', methods=['PUT', 'PATCH'])
 @jwt_required()
 def update_user(id):
-    current_user = get_jwt_identity()
+    current_user = get_jwt_identity() #id
 
     if current_user != id:
         return {'error': 'Invalid action'}, 400
